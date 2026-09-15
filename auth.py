@@ -50,7 +50,7 @@ def get_current_merchant(
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email = payload.get("sub")
-        if emial is None:
+        if email is None:
             raise credentials_exception
     except jwt.InvalidTokenError:
         raise credentials_exception
