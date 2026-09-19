@@ -62,3 +62,11 @@ def create_store(
 def check_slug(slug: str, db: Annotated[Session, Depends(get_db)]):
     exists = db.query(Store).filter(Store.slug == slug).first() is not None
     return SlugAvailability(slug=slug, available=not exists)
+
+@app.get("/stores", response_model=list[StoreOut])
+def list_my_store(
+    current_merchant: CurrentMerchant,
+    db: Annotated[Session, Depends(get_db)]
+):
+    return db.query(Store).filter(Store.merchant_id == current_merchant.id).all()
+
