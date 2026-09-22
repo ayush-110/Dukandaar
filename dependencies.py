@@ -25,7 +25,7 @@ def get_owned_product(
     db: Annotated[Session, Depends(get_db)]
 ) -> Product:
     product = db.query(Product).filter(Product.id == product_id).first()
-    if product is None or Product.store_id != store.id:
+    if product is None or product.store_id != store.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
     return product
 
