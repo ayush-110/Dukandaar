@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from decimal import Decimal
 from typing import Optional
 
@@ -65,7 +65,7 @@ class ProductOut(BaseModel):
     visible_online: bool = True
     visible_whatsapp: bool = True
     visible_wholesale: bool = False
-    variants: list[ProductVariantCreate]
+    variants: list[ProductVariantOut]
 
     class Config:
         from_attributes = True
