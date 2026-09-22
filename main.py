@@ -5,10 +5,11 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Merchant, Store
-from schemas import MerchantCreate, MerchantOut, StoreCreate, StoreOut, SlugAvailability
+from models import Merchant, Store, Product, ProductVariant
+from schemas import MerchantCreate, MerchantOut, StoreCreate, StoreOut, SlugAvailability, ProductCreate, ProductOut
 from auth import hash_password, verify_password, create_access_token, CurrentMerchant
 from utils import generate_unique_slug
+from dependencies import CurrentStore
 
 
 
@@ -70,3 +71,39 @@ def list_my_store(
 ):
     return db.query(Store).filter(Store.merchant_id == current_merchant.id).all()
 
+@app.post("/stores/{store_id}/products", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
+def create_product(
+    store: CurrentStore,
+    product_in: ProductCreate,
+    db: Annotated[Session, Depends(get_db)]
+):
+    product = Product(
+        store_id = store.id,
+        name = product_in.name,
+        description=product_in.description,
+        category=product_in.category,
+        visible_online=product_in.visible_online,
+        visible_whatsapp=product_in.visible_whatsapp,
+        visible_wholesale=product_in.visible_wholesale,   
+    )
+
+    product.variants = [
+        ProductVariant(
+            label = v.label,
+            mrp = v.mrp,
+            selling_price = v.selling_price,
+            wholesale_price = v.wholesale_price,
+            stock = v.stock
+        )
+        for v in product_in.variants
+    ]
+
+    db.add(product)
+    db.commit()
+    db.refresh(product)
+    return product
+
+
+@app.get("/stores/{store_id}/products", response_model=list[ProductOut])
+def list_products(store: CurrentStore,db: Annotated[Session, Depends(get_db)]):
+    return db.query(Product).filter(Product.store_id == store.id).all()
