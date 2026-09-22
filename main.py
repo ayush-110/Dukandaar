@@ -9,7 +9,7 @@ from models import Merchant, Store, Product, ProductVariant
 from schemas import MerchantCreate, MerchantOut, StoreCreate, StoreOut, SlugAvailability, ProductCreate, ProductOut
 from auth import hash_password, verify_password, create_access_token, CurrentMerchant
 from utils import generate_unique_slug
-from dependencies import CurrentStore
+from dependencies import CurrentStore, CurrentProduct
 
 
 
@@ -107,3 +107,39 @@ def create_product(
 @app.get("/stores/{store_id}/products", response_model=list[ProductOut])
 def list_products(store: CurrentStore,db: Annotated[Session, Depends(get_db)]):
     return db.query(Product).filter(Product.store_id == store.id).all()
+
+
+@app.get("/stores/{store_id}/products/{product_id}", response_model=ProductOut)
+def get_product(product: CurrentProduct):
+    return product
+
+@app.put("/stores/{store_id}/products/{product_id}", response_model=ProductOut)
+def update_product(
+    product: CurrentProduct,
+    product_in: ProductCreate,
+    db: Annotated[Session, Depends(get_db)],
+):
+    product.name = product_in.name
+    product.description = product_in.description
+    product.category = product_in.category
+    product.visible_online = product_in.visible_online
+    product.visible_whatsapp = product_in.visible_whatsapp
+    product.visible_wholesale = product_in.visible_wholesale
+
+    product.variants.clear()
+    product.variants = [
+        ProductVariant(
+            label=v.label, mrp=v.mrp, selling_price=v.selling_price,
+            wholesale_price=v.wholesale_price, stock=v.stock,
+        )
+        for v in product_in.variants
+    ]
+
+    db.commit()
+    db.refresh(product)
+    return product
+
+@app.delete("/stores/{store_id}/products/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_product(product: CurrentProduct, db: Annotated[Session, Depends(get_db)]):
+    db.delete(product)
+    db.commit()

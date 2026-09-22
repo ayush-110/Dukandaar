@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Store
 from auth import CurrentMerchant
+from models import Product
 
 def get_owned_store(
     store_id: int,
@@ -17,3 +18,15 @@ def get_owned_store(
     return store 
 
 CurrentStore = Annotated[Store, Depends(get_owned_store)]
+
+def get_owned_product(
+    product_id: int,
+    store: CurrentStore,
+    db: Annotated[Session, Depends(get_db)]
+) -> Product:
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if product is None or Product.store_id != store.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+    return product
+
+CurrentProduct = Annotated[Product, Depends(get_owned_product)]
